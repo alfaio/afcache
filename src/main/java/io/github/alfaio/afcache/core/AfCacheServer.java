@@ -1,5 +1,6 @@
-package io.github.alfaio.afcache;
+package io.github.alfaio.afcache.core;
 
+import io.github.alfaio.afcache.AfPlugin;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.Channel;

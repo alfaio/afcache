@@ -1,4 +1,4 @@
-package io.github.alfaio.afcache;
+package io.github.alfaio.afcache.core;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
