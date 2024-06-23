@@ -1,5 +1,6 @@
 package io.github.alfaio.afcache.core;
 
+import io.github.alfaio.afcache.core.command.Commands;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
@@ -15,8 +16,6 @@ public class AfCacheHandler extends SimpleChannelInboundHandler<String> {
     public static final String STR_PREFIX = "+";
     public static final String BULK_PREFIX = "$";
     public static final String OK = "OK";
-    public static final String INFO = "AfCache server[1.0.0], created by Alfa." + CRLF
-            + "Mock redis server at 2024-06-12 in XiaMen." + CRLF;
     public static final AfCache CACHE = new AfCache();
 
     @Override
@@ -24,78 +23,26 @@ public class AfCacheHandler extends SimpleChannelInboundHandler<String> {
         String[] args = message.split(CRLF);
         System.out.println("AfCacheHandler ===>" + String.join(",", args));
         String cmd = args[2].toUpperCase();
-        if ("COMMAND".equals(cmd)) {
-            writeByteBuffer(ctx, "*2"
-                    + CRLF + "$7"
-                    + CRLF + "COMMAND"
-                    + CRLF + "$4"
-                    + CRLF + "PING"
-                    + CRLF);
-        } else if ("PING".equals(cmd)) {
-            String result = "PONG";
-            if (args.length >= 5) {
-                result = args[4];
-            }
-            simpleString(ctx, result);
-        } else if ("INFO".equals(cmd)) {
-            bulkString(ctx, INFO);
-        } else if ("SET".equals(cmd)) {
-            CACHE.set(args[4], args[6]);
-            simpleString(ctx, OK);
-        } else if ("GET".equals(cmd)) {
-            String value = CACHE.get(args[4]);
-            bulkString(ctx, value);
-        } else if ("STRLEN".equals(cmd)) {
-            String value = CACHE.get(args[4]);
-            bulkString(ctx, value);
-            integer(ctx, value == null ? 0 : value.length());
-        } else if ("DEL".equals(cmd)) {
-            int len = (args.length - 3) / 2;
-            String[] keys = new String[len];
-            for (int i = 0; i < len; i++) {
-                keys[i] = args[4 + i * 2];
-            }
-            integer(ctx, CACHE.del(keys));
-        } else if ("EXISTS".equals(cmd)) {
-            int len = (args.length - 3) / 2;
-            String[] keys = new String[len];
-            for (int i = 0; i < len; i++) {
-                keys[i] = args[4 + i * 2];
-            }
-            integer(ctx, CACHE.exists(keys));
-        } else if ("MGET".equals(cmd)) {
-            int len = (args.length - 3) / 2;
-            String[] keys = new String[len];
-            for (int i = 0; i < len; i++) {
-                keys[i] = args[4 + i * 2];
-            }
-            array(ctx, CACHE.mget(keys));
-        } else if ("MSET".equals(cmd)) {
-            int len = (args.length - 3) / 4;
-            String[] keys = new String[len];
-            String[] values = new String[len];
-            for (int i = 0; i < len; i++) {
-                keys[i] = args[4 + i * 4];
-                values[i] = args[6 + i * 4];
-            }
-            CACHE.mset(keys, values);
-            simpleString(ctx, OK);
-        } else if ("INCR".equals(cmd)) {
-            String key = args[4];
-            try {
-                integer(ctx, CACHE.incr(key));
-            } catch (NumberFormatException e) {
-                error(ctx, "NFE " + key + " value [" + CACHE.get(key) + "] is not an integer.");
-            }
-        } else if ("DECR".equals(cmd)) {
-            String key = args[4];
-            try {
-                integer(ctx, CACHE.decr(key));
-            } catch (NumberFormatException e) {
-                error(ctx, "NFE " + key + " value [" + CACHE.get(key) + "] is not an integer.");
-            }
+
+        Command command = Commands.get(cmd);
+        if (command != null) {
+            Reply<?> reply = command.exec(CACHE, args);
+            System.out.println("CMD[" + cmd + "} => " + reply.type + " => " + reply.value);
+            replyContext(ctx, reply);
         } else {
-            simpleString(ctx, OK);
+            Reply<String> reply = Reply.error("ERR unsupported command '" + cmd + "'");
+            replyContext(ctx, reply);
+        }
+    }
+
+    private void replyContext(ChannelHandlerContext ctx, Reply<?> reply) {
+        switch (reply.type) {
+            case INT -> integer(ctx, (Integer) reply.value);
+            case SIMPLE_STRING -> simpleString(ctx, (String) reply.value);
+            case BULK_STRING -> bulkString(ctx, (String) reply.value);
+            case ARRAY -> array(ctx, (String[]) reply.value);
+            case ERROR -> error(ctx, (String) reply.value);
+            default -> simpleString(ctx, OK);
         }
     }
 
