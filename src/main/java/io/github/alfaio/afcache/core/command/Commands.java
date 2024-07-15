@@ -61,7 +61,12 @@ public class Commands {
         register(new HdelCommand());
 
         // zset
-
+        register(new ZaddCommand());
+        register(new ZcardCommand());
+        register(new ZcountCommand());
+        register(new ZscoreCommand());
+        register(new ZrankCommand());
+        register(new ZremCommand());
     }
 
     public static void register(Command command) {
