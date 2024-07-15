@@ -51,9 +51,16 @@ public class Commands {
         register(new SpopCommand());
         register(new SismemberCommand());
 
-        // zset
-
         // hash
+        register(new HsetCommand());
+        register(new HgetCommand());
+        register(new HgetallCommand());
+        register(new HmgetCommand());
+        register(new HlenCommand());
+        register(new HexistsCommand());
+        register(new HdelCommand());
+
+        // zset
 
     }
 

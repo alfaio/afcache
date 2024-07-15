@@ -56,4 +56,22 @@ public interface Command {
         }
         return values;
     }
+
+    default String[] getHkeys(String[] args) {
+        int len = (args.length - 5) / 4;
+        String[] keys = new String[len];
+        for (int i = 0; i < len; i++) {
+            keys[i] = args[6 + i * 4];
+        }
+        return keys;
+    }
+
+    default String[] getHvals(String[] args) {
+        int len = (args.length - 5) / 4;
+        String[] values = new String[len];
+        for (int i = 0; i < len; i++) {
+            values[i] = args[8 + i * 4];
+        }
+        return values;
+    }
 }
